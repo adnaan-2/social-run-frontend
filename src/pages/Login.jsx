@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Footprints, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ParticleField from '../components/ParticleField';
+import api from '../services/api';
 
 // Helper: load the Google Identity Services script once
 function loadGisScript() {
@@ -38,6 +39,7 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
+  const [googleConfigured, setGoogleConfigured] = useState(true);
   const googleBtnRef = useRef(null);
 
   const { login, googleLogin, error, setError, isAuthenticated } = useAuth();
@@ -53,8 +55,22 @@ export default function Login() {
 
   // Initialize Google Sign-In on mount — renders the real Google button
   const initGoogle = useCallback(async () => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') return;
+    let clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    // If not configured in build env, try to get it from the backend
+    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+      try {
+        const response = await api.get('/auth/google/client-id');
+        clientId = response?.data?.clientId;
+      } catch (err) {
+        console.warn('Failed to fetch Google Client ID from backend:', err);
+      }
+    }
+
+    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+      setGoogleConfigured(false);
+      return;
+    }
 
     try {
       await loadGisScript();
@@ -88,9 +104,11 @@ export default function Login() {
           shape: 'pill',
         });
         setGoogleReady(true);
+        setGoogleConfigured(true);
       }
     } catch (err) {
       console.warn('Google Sign-In init failed:', err);
+      setGoogleConfigured(false);
     }
   }, [googleLogin, navigate]);
 
@@ -345,78 +363,82 @@ export default function Login() {
           </button>
 
           {/* Divider */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <hr
+          {googleConfigured && (
+            <div
               style={{
-                flex: 1,
-                border: 'none',
-                borderTop: '1px solid var(--glass-border)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
               }}
-            />
-            <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>or</span>
-            <hr
-              style={{
-                flex: 1,
-                border: 'none',
-                borderTop: '1px solid var(--glass-border)',
-              }}
-            />
-          </div>
+            >
+              <hr
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  borderTop: '1px solid var(--glass-border)',
+                }}
+              />
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>or</span>
+              <hr
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  borderTop: '1px solid var(--glass-border)',
+                }}
+              />
+            </div>
+          )}
 
           {/* Google Sign-In — rendered by Google's GIS library */}
-          <div
-            style={{
-              position: 'relative',
-              width: '100%',
-              minHeight: 44,
-              display: 'flex',
-              justifyContent: 'center',
-            }}
-          >
-            {!googleReady && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  borderRadius: 12,
-                  border: '1px solid var(--glass-border)',
-                  background: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 10,
-                  fontSize: 15,
-                  fontWeight: 500,
-                  color: '#3c4043',
-                  opacity: 0.6,
-                  zIndex: 2,
-                }}
-              >
-                <Loader2 size={18} style={{ animation: 'spin-slow 1s linear infinite', color: '#3c4043' }} />
-                Loading Google Sign-In...
-              </div>
-            )}
+          {googleConfigured && (
             <div
-              ref={googleBtnRef}
               style={{
+                position: 'relative',
                 width: '100%',
+                minHeight: 44,
                 display: 'flex',
                 justifyContent: 'center',
               }}
-            />
-          </div>
+            >
+              {!googleReady && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    borderRadius: 12,
+                    border: '1px solid var(--glass-border)',
+                    background: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 10,
+                    fontSize: 15,
+                    fontWeight: 500,
+                    color: '#3c4043',
+                    opacity: 0.6,
+                    zIndex: 2,
+                  }}
+                >
+                  <Loader2 size={18} style={{ animation: 'spin-slow 1s linear infinite', color: '#3c4043' }} />
+                  Loading Google Sign-In...
+                </div>
+              )}
+              <div
+                ref={googleBtnRef}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              />
+            </div>
+          )}
 
           {/* Loading overlay when Google auth is in progress */}
-          {googleLoading && (
+          {googleConfigured && googleLoading && (
             <div
               style={{
                 display: 'flex',
