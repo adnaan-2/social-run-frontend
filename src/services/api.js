@@ -1,7 +1,16 @@
 import axios from 'axios';
 
+const defaultApiBaseUrl = import.meta.env.DEV
+  ? '/api'
+  : 'https://social-run-backend.vercel.app/api';
+
+export const API_BASE_URL = (import.meta.env.VITE_API_URL || defaultApiBaseUrl).replace(/\/$/, '');
+export const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || (import.meta.env.DEV
+  ? 'http://localhost:5000'
+  : 'https://social-run-backend.vercel.app')).replace(/\/$/, '');
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });

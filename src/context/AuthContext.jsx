@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import api from '../services/api';
+import api, { SOCKET_URL } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -17,8 +17,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (user) {
       // Connect to Socket.io backend
-      const socketUrl = 'http://localhost:5000';
-      const newSocket = io(socketUrl, {
+      const newSocket = io(SOCKET_URL, {
         withCredentials: true,
         transports: ['websocket', 'polling'],
       });
