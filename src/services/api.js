@@ -1,8 +1,6 @@
 import axios from 'axios';
 
-const defaultApiBaseUrl = import.meta.env.DEV
-  ? '/api'
-  : 'https://social-run-backend.vercel.app/api';
+const defaultApiBaseUrl = '/api';
 
 export const API_BASE_URL = (import.meta.env.VITE_API_URL || defaultApiBaseUrl).replace(/\/$/, '');
 export const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || (import.meta.env.DEV
